@@ -13,7 +13,7 @@ To meet production standards, we have moved beyond a simple multi-AZ setup to a 
 
 ---
 
-## 🌟 Visualizing the HA Architecture
+## Visualizing the HA Architecture
 
 ```mermaid
 graph TD
@@ -66,7 +66,7 @@ graph TD
 
 ---
 
-## 🚀 Deployment & CI/CD Strategy
+## Deployment & CI/CD Strategy
 
 This cluster is managed via **GitHub Actions** using a secure, keyless OIDC integration.
 
@@ -76,7 +76,7 @@ This cluster is managed via **GitHub Actions** using a secure, keyless OIDC inte
 
 ---
 
-## 🔍 Post-Deployment Verification
+## Post-Deployment Verification
 
 Now that the cluster is LIVE, follow these steps to verify it from your local machine:
 
@@ -98,7 +98,7 @@ kubectl get pods -n kube-system
 
 ---
 
-## 💡 What's Next?
+## What's Next?
 - **Application Deployment**: Use the pre-configured `cicd-pipeline.yaml` to deploy your Java services.
 - **Monitoring**: Consider enabling Container Insights or installing Prometheus/Grafana for deep visibility.
 - **Security**: Implement Network Policies to restrict pod-to-pod communication.
