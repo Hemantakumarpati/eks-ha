@@ -1,0 +1,36 @@
+name: Cleanup Production EKS (HA)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deletion:
+        description: 'Type "DELETE" to confirm resource destruction'
+        required: true
+        default: 'NO'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  STACK_NAME: production-eks-ha
+
+jobs:
+  cleanup-infrastructure:
+    name: Cleanup EKS Infrastructure
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm_deletion == 'DELETE'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run Cleanup Script
+        run: |
+          chmod +x cleanup.sh
+          ./cleanup.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ env.AWS_REGION }}
