@@ -11,12 +11,9 @@ Parameters:
   ClusterName:
     Type: String
     Default: production-eks-ha
-  CreateOIDCProvider:
+  OIDCProviderArn:
     Type: String
-    Default: 'true'
-  ExistingOIDCProviderArn:
-    Type: String
-    Default: ''
+    Description: ARN of the existing GitHub OIDC Provider
 
 Resources:
   NetworkStack:
@@ -31,8 +28,7 @@ Resources:
       Parameters:
         GitHubOrg: !Select [0, !Split ["/", !Ref GitHubRepo]]
         GitHubRepo: !Select [1, !Split ["/", !Ref GitHubRepo]]
-        CreateOIDCProvider: !Ref CreateOIDCProvider
-        ExistingOIDCProviderArn: !Ref ExistingOIDCProviderArn
+        OIDCProviderArn: !Ref OIDCProviderArn
 
   SecurityStack:
     Type: AWS::CloudFormation::Stack
