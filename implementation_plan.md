@@ -52,3 +52,31 @@ This plan upgrades the existing architecture to a **truly production-ready, high
 2. **NAT Gateway Test**: Terminate a NAT Gateway and verify that pods in other AZs still have internet access.
 3. **Connectivity**: Run a test pod in each subnet to verify outbound internet access through NAT Gateways.
 
+---
+
+## Bootstrap & GitHub Actions Setup
+
+To enable automated deployments via OIDC, follow these setup steps.
+
+### Step 1: Manual Bootstrap (First Deployment)
+Since GitHub Actions needs the IAM Role created by the stack, you must run the first deployment manually from your local machine (ensure your local CLI is set to `ap-south-1`):
+
+```powershell
+./deploy.sh <YOUR_S3_BUCKET_NAME> eks-production-ha <YOUR_AWS_CONNECTION_ARN> Hemantakumarpati/eks-ha
+```
+
+### Step 2: Configure GitHub Secrets
+Once the initial deployment succeeds, go to your GitHub Repo **Settings > Secrets and variables > Actions** and add the following secrets:
+
+| Secret Name | Description | Where to find it? |
+| :--- | :--- | :--- |
+| **`AWS_ROLE_ARN`** | The IAM Role for GitHub Actions | CloudFormation > `eks-production-ha` > **Outputs** > `GitHubRoleArn` |
+| **`AWS_CONNECTION_ARN`** | Your AWS CodeConnections ARN | AWS Console > CodeConnections > Connections |
+| **`S3_BUCKET`** | The S3 bucket for templates | AWS Console > S3 |
+
+### Step 3: Manual Deployment
+After adding the secrets, you can manually trigger the deployment:
+1. Go to your GitHub Repository **Actions** tab.
+2. Select the **"Deploy Production EKS (HA)"** workflow.
+3. Click **Run workflow** and select the `main` branch.
+
