@@ -8,7 +8,7 @@ Parameters:
     Description: GitHub Organization/User name
   GitHubRepo:
     Type: String
-    Default: 'native-eks'
+    Default: 'eks-ha'
     Description: GitHub Repository name
 
 Resources:
