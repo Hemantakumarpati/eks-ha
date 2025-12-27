@@ -25,7 +25,7 @@ echo "Deploying Master Stack..."
 aws cloudformation deploy \
     --template-file packaged.yaml \
     --stack-name $STACK_NAME \
-    --parameter-overrides GitHubConnectionArn=$CONNECTION_ARN GitHubRepo=$REPO ClusterName=$STACK_NAME CreateOIDCProvider=${CREATE_OIDC:-true} ExistingOIDCProviderArn=${OIDC_ARN:-""} \
+    --parameter-overrides GitHubConnectionArn=$CONNECTION_ARN GitHubRepo=$REPO ClusterName=$STACK_NAME OIDCProviderArn=${OIDC_ARN:-""} \
     --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
 
 echo "Deployment Finished!"
