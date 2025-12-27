@@ -46,8 +46,20 @@ jobs:
           echo "Initiating deletion of stack: $STACK_NAME..."
           aws cloudformation delete-stack --stack-name "$STACK_NAME" --region "$REGION"
 
-          # 3. Wait for deletion to complete
-          echo "Waiting for stack deletion to finish (this may take several minutes)..."
-          aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME" --region "$REGION"
+          # 3. Wait for deletion to complete with error reporting
+          echo "Waiting for stack deletion to finish..."
+          if ! aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME" --region "$REGION"; then
+            echo "ERROR: Stack deletion failed. Fetching failure reasons..."
+            
+            # Get the status of all stacks (including nested) that are in DELETE_FAILED
+            aws cloudformation describe-stacks --region "$REGION" --query 'Stacks[?StackStatus==`DELETE_FAILED`].[StackName, StackStatus, StackStatusReason]' --output table
+            
+            # Fetch events for the main stack to see what failed
+            echo "Top level stack events:"
+            aws cloudformation describe-stack-events --stack-name "$STACK_NAME" --region "$REGION" --query 'StackEvents[?ResourceStatus==`DELETE_FAILED`].[LogicalResourceId, ResourceStatusReason]' --output table
+            
+            echo "TIP: Common causes for EKS delete failure include ENIs or Load Balancers created by Kubernetes that haven't been cleaned up by the cluster yet."
+            exit 1
+          fi
 
           echo "Cleanup Process Finished!"
