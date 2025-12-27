@@ -8,6 +8,9 @@ Parameters:
   GitHubRepo:
     Type: String
     Description: Format 'Username/RepoName'
+  ClusterName:
+    Type: String
+    Default: production-eks-ha
 
 Resources:
   NetworkStack:
@@ -32,7 +35,7 @@ Resources:
     Properties:
       TemplateURL: eks-cluster.yaml
       Parameters:
-        ClusterName: !Ref AWS::StackName
+        ClusterName: !Ref ClusterName
         SubnetIds: !GetAtt NetworkStack.Outputs.PrivateSubnets
         SecurityGroupIds: !GetAtt SecurityStack.Outputs.ControlPlaneSGId
         RoleArn: !GetAtt IAMStack.Outputs.ClusterRoleArn
