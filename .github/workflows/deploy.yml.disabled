@@ -1,0 +1,45 @@
+name: Deploy Production EKS (HA)
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'templates/**'
+      - '.github/workflows/deploy.yml'
+      - 'deploy.sh'
+  workflow_dispatch: # Allows manual trigger
+
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  STACK_NAME: production-eks-ha
+
+jobs:
+  deploy-infrastructure:
+    name: Deploy EKS Infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate CloudFormation Templates
+        run: |
+          aws cloudformation validate-template --template-body file://templates/master.yaml
+
+      - name: Run Deployment Script
+        run: |
+          chmod +x deploy.sh
+          ./deploy.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ secrets.GITHUB_CONNECTION_ARN }} ${{ github.repository }}
+
+      - name: Post-Deployment Check
+        run: |
+          aws eks update-kubeconfig --name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }}
+          kubectl get nodes -o wide

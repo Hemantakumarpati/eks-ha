@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'IAM Layer: Roles for EKS Cluster, Node Groups, and GitHub Actions OIDC.'
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Default: 'Hemantakumarpati'
+    Description: GitHub Organization/User name
+  GitHubRepo:
+    Type: String
+    Default: 'native-eks'
+    Description: GitHub Repository name
+
+Resources:
+  # EKS Cluster Role
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [eks.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+
+  # EKS Node Group Role
+  EKSNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+
+  # OIDC Provider for GitHub Actions
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1 # GitHub's current thumbprint
+
+  # GitHub Actions OIDC Role
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOIDCProvider
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+Outputs:
+  ClusterRoleArn:
+    Value: !GetAtt EKSClusterRole.Arn
+  NodeRoleArn:
+    Value: !GetAtt EKSNodeRole.Arn
+  GitHubRoleArn:
+    Value: !GetAtt GitHubActionsRole.Arn
