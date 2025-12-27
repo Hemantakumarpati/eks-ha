@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EKS Control Plane Layer.'
 
 Parameters:
+  ClusterName:
+    Type: String
+    Default: production-eks-ha
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
   SecurityGroupIds:
@@ -13,7 +16,7 @@ Resources:
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Name: demo-cluster
+      Name: !Ref ClusterName
       Version: '1.31'
       RoleArn: !Ref RoleArn
       ResourcesVpcConfig:
