@@ -38,15 +38,34 @@ jobs:
 
           echo "Cleaning up AWS resources for stack: $STACK_NAME in region: $REGION"
 
-          # 1. Empty the S3 bucket used for templates
-          echo "Emptying S3 bucket: $BUCKET_NAME..."
-          aws s3 rm "s3://$BUCKET_NAME" --recursive || echo "Bucket already empty or doesn't exist."
+          # 1. Empty the template S3 bucket
+          echo "Emptying Template S3 bucket: $BUCKET_NAME..."
+          aws s3 rm "s3://$BUCKET_NAME" --recursive || echo "Template bucket already empty or doesn't exist."
 
-          # 2. Delete the CloudFormation stack
+          # 2. Find and empty ALL S3 buckets created by the stack and nested stacks
+          echo "Searching for additional S3 buckets to empty..."
+          
+          # Find all nested stacks
+          NESTED_STACKS=$(aws cloudformation describe-stack-resources --stack-name "$STACK_NAME" --region "$REGION" --query 'StackResources[?ResourceType==`AWS::CloudFormation::Stack`].PhysicalResourceId' --output text)
+          
+          ALL_STACKS="$STACK_NAME $NESTED_STACKS"
+          
+          for s in $ALL_STACKS; do
+            echo "Checking stack $s for S3 buckets..."
+            BUCKETS=$(aws cloudformation describe-stack-resources --stack-name "$s" --region "$REGION" --query 'StackResources[?ResourceType==`AWS::S3::Bucket`].PhysicalResourceId' --output text)
+            for b in $BUCKETS; do
+              if [ -n "$b" ] && [ "$b" != "None" ]; then
+                echo "Emptying bucket: $b"
+                aws s3 rm "s3://$b" --recursive || echo "Could not empty bucket $b"
+              fi
+            done
+          done
+
+          # 3. Delete the CloudFormation stack
           echo "Initiating deletion of stack: $STACK_NAME..."
           aws cloudformation delete-stack --stack-name "$STACK_NAME" --region "$REGION"
 
-          # 3. Wait for deletion to complete with error reporting
+          # 4. Wait for deletion to complete with error reporting
           echo "Waiting for stack deletion to finish..."
           if ! aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME" --region "$REGION"; then
             echo "ERROR: Stack deletion failed. Fetching failure reasons..."
@@ -54,11 +73,14 @@ jobs:
             # Get the status of all stacks (including nested) that are in DELETE_FAILED
             aws cloudformation describe-stacks --region "$REGION" --query 'Stacks[?StackStatus==`DELETE_FAILED`].[StackName, StackStatus, StackStatusReason]' --output table
             
-            # Fetch events for the main stack to see what failed
-            echo "Top level stack events:"
-            aws cloudformation describe-stack-events --stack-name "$STACK_NAME" --region "$REGION" --query 'StackEvents[?ResourceStatus==`DELETE_FAILED`].[LogicalResourceId, ResourceStatusReason]' --output table
+            # Fetch events for the stacks to see what failed
+            echo "Failure Details:"
+            for s in $(aws cloudformation describe-stacks --region "$REGION" --query 'Stacks[?StackStatus==`DELETE_FAILED`].StackName' --output text); do
+                echo "Events for stack $s:"
+                aws cloudformation describe-stack-events --stack-name "$s" --region "$REGION" --query 'StackEvents[?ResourceStatus==`DELETE_FAILED`].[LogicalResourceId, ResourceStatusReason]' --output table
+            done
             
-            echo "TIP: Common causes for EKS delete failure include ENIs or Load Balancers created by Kubernetes that haven't been cleaned up by the cluster yet."
+            echo "TIP: If it still fails, it might be due to ENIs or Load Balancers. Retrying the workflow often helps as AWS cleans these up in the background."
             exit 1
           fi
 
