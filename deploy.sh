@@ -25,7 +25,7 @@ echo "Deploying Master Stack..."
 aws cloudformation deploy \
     --template-file packaged.yaml \
     --stack-name $STACK_NAME \
-    --parameter-overrides GitHubConnectionArn=$CONNECTION_ARN GitHubRepo=$REPO \
+    --parameter-overrides GitHubConnectionArn=$CONNECTION_ARN GitHubRepo=$REPO ClusterName=$STACK_NAME \
     --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
 
 echo "Deployment Finished!"
