@@ -37,7 +37,7 @@ jobs:
       - name: Run Deployment Script
         run: |
           chmod +x deploy.sh
-          ./deploy.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ secrets.GITHUB_CONNECTION_ARN }} ${{ github.repository }}
+          ./deploy.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ secrets.AWS_CONNECTION_ARN }} ${{ github.repository }}
 
       - name: Post-Deployment Check
         run: |
