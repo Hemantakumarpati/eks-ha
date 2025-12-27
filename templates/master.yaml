@@ -11,6 +11,12 @@ Parameters:
   ClusterName:
     Type: String
     Default: production-eks-ha
+  CreateOIDCProvider:
+    Type: String
+    Default: 'true'
+  ExistingOIDCProviderArn:
+    Type: String
+    Default: ''
 
 Resources:
   NetworkStack:
@@ -22,6 +28,11 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: iam.yaml
+      Parameters:
+        GitHubOrg: !Select [0, !Split ["/", !Ref GitHubRepo]]
+        GitHubRepo: !Select [1, !Split ["/", !Ref GitHubRepo]]
+        CreateOIDCProvider: !Ref CreateOIDCProvider
+        ExistingOIDCProviderArn: !Ref ExistingOIDCProviderArn
 
   SecurityStack:
     Type: AWS::CloudFormation::Stack
