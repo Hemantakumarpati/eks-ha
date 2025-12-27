@@ -10,18 +10,9 @@ Parameters:
     Type: String
     Default: 'eks-ha'
     Description: GitHub Repository name
-  CreateOIDCProvider:
+  OIDCProviderArn:
     Type: String
-    Default: 'true'
-    AllowedValues: ['true', 'false']
-    Description: Whether to create a new OIDC Provider (set to 'false' if you already have one).
-  ExistingOIDCProviderArn:
-    Type: String
-    Default: ''
-    Description: (Optional) The ARN of an existing GitHub OIDC Provider if CreateOIDCProvider is 'false'.
-
-Conditions:
-  CreateNewProvider: !Equals [!Ref CreateOIDCProvider, 'true']
+    Description: The ARN of the existing GitHub OIDC Provider.
 
 Resources:
   # EKS Cluster Role
@@ -55,17 +46,6 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
 
-  # OIDC Provider for GitHub Actions
-  GitHubOIDCProvider:
-    Type: AWS::IAM::OIDCProvider
-    Condition: CreateNewProvider
-    Properties:
-      Url: https://token.actions.githubusercontent.com
-      ClientIdList:
-        - sts.amazonaws.com
-      ThumbprintList:
-        - 6938fd4d98bab03faadb97b34396831e3780aea1 # GitHub's current thumbprint
-
   # GitHub Actions OIDC Role
   GitHubActionsRole:
     Type: AWS::IAM::Role
@@ -75,7 +55,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Federated: !If [CreateNewProvider, !Ref GitHubOIDCProvider, !Ref ExistingOIDCProviderArn]
+              Federated: !Ref OIDCProviderArn
             Action: 'sts:AssumeRoleWithWebIdentity'
             Condition:
               StringLike:
