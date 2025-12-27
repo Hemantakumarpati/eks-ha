@@ -32,6 +32,7 @@ Resources:
     Properties:
       TemplateURL: eks-cluster.yaml
       Parameters:
+        ClusterName: !Ref AWS::StackName
         SubnetIds: !GetAtt NetworkStack.Outputs.PrivateSubnets
         SecurityGroupIds: !GetAtt SecurityStack.Outputs.ControlPlaneSGId
         RoleArn: !GetAtt IAMStack.Outputs.ClusterRoleArn
