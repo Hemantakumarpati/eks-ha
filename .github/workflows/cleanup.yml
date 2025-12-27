@@ -55,8 +55,30 @@ jobs:
             BUCKETS=$(aws cloudformation describe-stack-resources --stack-name "$s" --region "$REGION" --query 'StackResources[?ResourceType==`AWS::S3::Bucket`].PhysicalResourceId' --output text)
             for b in $BUCKETS; do
               if [ -n "$b" ] && [ "$b" != "None" ]; then
-                echo "Emptying bucket: $b"
-                aws s3 rm "s3://$b" --recursive || echo "Could not empty bucket $b"
+                echo "Emptying bucket (including versions and markers): $b"
+                
+                # Delete all object versions
+                versions=$(aws s3api list-object-versions --bucket "$b" --output json --query 'Versions[].{Key:Key,VersionId:VersionId}')
+                if [ "$versions" != "null" ] && [ "$versions" != "[]" ]; then
+                  echo "$versions" | jq -c '.[]' | while read -r obj; do
+                    key=$(echo "$obj" | jq -r .Key)
+                    vid=$(echo "$obj" | jq -r .VersionId)
+                    aws s3api delete-object --bucket "$b" --key "$key" --version-id "$vid"
+                  done
+                fi
+
+                # Delete all delete markers
+                markers=$(aws s3api list-object-versions --bucket "$b" --output json --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}')
+                if [ "$markers" != "null" ] && [ "$markers" != "[]" ]; then
+                  echo "$markers" | jq -c '.[]' | while read -r obj; do
+                    key=$(echo "$obj" | jq -r .Key)
+                    vid=$(echo "$obj" | jq -r .VersionId)
+                    aws s3api delete-object --bucket "$b" --key "$key" --version-id "$vid"
+                  done
+                fi
+                
+                # Standard recursive removal for any leftovers
+                aws s3 rm "s3://$b" --recursive || echo "Bucket $b empty"
               fi
             done
           done
