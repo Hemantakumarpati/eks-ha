@@ -19,7 +19,7 @@ jobs:
   cleanup-infrastructure:
     name: Cleanup EKS Infrastructure
     runs-on: ubuntu-latest
-    if: github.event.inputs.confirm_deletion == 'DELETE'
+    if: ${{ github.event.inputs.confirm_deletion == 'DELETE' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
