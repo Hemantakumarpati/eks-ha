@@ -66,17 +66,39 @@ graph TD
 
 ---
 
-## 🚀 Deployment Instructions
+## 🚀 Deployment & CI/CD Strategy
 
-1.  **Prerequisities**: Ensure you have an S3 bucket to store the CloudFormation templates (required for Nested Stacks).
-2.  **Upload Templates**: 
-    ```bash
-    aws s3 cp templates/ s3://your-bucket-name/templates/ --recursive
-    ```
-3.  **Execute Master Stack**:
-    ```bash
-    aws cloudformation create-stack \
-      --stack-name production-eks-ha \
-      --template-url https://s3.amazonaws.com/your-bucket-name/templates/master.yaml \
-      --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
-    ```
+This cluster is managed via **GitHub Actions** using a secure, keyless OIDC integration.
+
+1.  **Environment**: Provisioned in **`ap-south-1` (Mumbai)**.
+2.  **Trigger**: Manual trigger via `workflow_dispatch` for controlled infrastructure updates.
+3.  **Security**: No permanent AWS Access Keys; utilizes short-lived OIDC tokens.
+
+---
+
+## 🔍 Post-Deployment Verification
+
+Now that the cluster is LIVE, follow these steps to verify it from your local machine:
+
+### 1. Update your local Kubeconfig
+```bash
+aws eks update-kubeconfig --name production-eks-ha --region ap-south-1
+```
+
+### 2. Verify Node Health
+```bash
+kubectl get nodes -o wide
+```
+*You should see 3 nodes in `Ready` status, distributed across different subnets/AZs.*
+
+### 3. Check System Pods
+```bash
+kubectl get pods -n kube-system
+```
+
+---
+
+## 💡 What's Next?
+- **Application Deployment**: Use the pre-configured `cicd-pipeline.yaml` to deploy your Java services.
+- **Monitoring**: Consider enabling Container Insights or installing Prometheus/Grafana for deep visibility.
+- **Security**: Implement Network Policies to restrict pod-to-pod communication.
