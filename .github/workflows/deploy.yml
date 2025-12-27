@@ -34,15 +34,27 @@ jobs:
           ./deploy.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ secrets.AWS_CONNECTION_ARN }} ${{ github.repository }}
 
       - name: Post-Deployment Check
+        if: always()
         run: |
           echo "Checking CloudFormation Stack Status in ap-south-1:"
-          aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query "Stacks[0].StackStatus"
+          STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query "Stacks[0].StackStatus" --output text || echo "NOT_FOUND")
+          echo "Current Status: $STATUS"
           
-          echo "Listing EKS Clusters in ap-south-1:"
-          aws eks list-clusters --region ${{ env.AWS_REGION }}
+          if [[ "$STATUS" == *"ROLLBACK"* ]]; then
+            echo "::error::Stack is in $STATUS state. Fetching failure events..."
+            aws cloudformation describe-stack-events --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED`].{Resource:LogicalResourceId,Status:ResourceStatus,Reason:ResourceStatusReason}' --output table
+          fi
           
-          echo "Checking Stack Outputs:"
-          aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query "Stacks[0].Outputs"
-          
-          aws eks update-kubeconfig --name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }}
-          kubectl get nodes -o wide
+          if [ "$STATUS" == "CREATE_COMPLETE" ] || [ "$STATUS" == "UPDATE_COMPLETE" ]; then
+            echo "Listing EKS Clusters in ap-south-1:"
+            aws eks list-clusters --region ${{ env.AWS_REGION }}
+            
+            echo "Checking Stack Outputs:"
+            aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query "Stacks[0].Outputs"
+            
+            aws eks update-kubeconfig --name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }}
+            kubectl get nodes -o wide
+          else
+            echo "Skipping EKS checks as stack is in failed/incomplete state: $STATUS"
+            exit 1
+          fi
