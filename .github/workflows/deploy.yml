@@ -2,13 +2,9 @@ name: Deploy Production EKS (HA)
 on:
   workflow_dispatch: # Allows manual trigger
     inputs:
-      create_oidc:
-        description: 'Create a new OIDC Provider (true/false)'
-        required: true
-        default: 'true'
       oidc_arn:
-        description: 'Existing OIDC Provider ARN (if create_oidc is false)'
-        required: false
+        description: 'Existing GitHub OIDC Provider ARN'
+        required: true
         default: ''
 
 permissions:
@@ -42,7 +38,6 @@ jobs:
           chmod +x deploy.sh
           ./deploy.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ secrets.AWS_CONNECTION_ARN }} ${{ github.repository }}
         env:
-          CREATE_OIDC: ${{ github.event.inputs.create_oidc }}
           OIDC_ARN: ${{ github.event.inputs.oidc_arn }}
 
       - name: Post-Deployment Check
