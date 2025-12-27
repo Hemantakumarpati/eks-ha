@@ -32,5 +32,10 @@ jobs:
 
       - name: Run Cleanup Script
         run: |
+          if [ ! -f "cleanup.sh" ]; then
+            echo "ERROR: cleanup.sh not found in root directory!"
+            echo "Please ensure you have run 'git add cleanup.sh' and pushed it."
+            exit 1
+          fi
           chmod +x cleanup.sh
           ./cleanup.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ env.AWS_REGION }}
