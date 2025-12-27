@@ -1,11 +1,5 @@
 name: Deploy Production EKS (HA)
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'templates/**'
-      - '.github/workflows/deploy.yml'
-      - 'deploy.sh'
   workflow_dispatch: # Allows manual trigger
 
 permissions:
