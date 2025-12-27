@@ -30,12 +30,24 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Run Cleanup Script
+      - name: Run Cleanup
         run: |
-          if [ ! -f "cleanup.sh" ]; then
-            echo "ERROR: cleanup.sh not found in root directory!"
-            echo "Please ensure you have run 'git add cleanup.sh' and pushed it."
-            exit 1
-          fi
-          chmod +x cleanup.sh
-          ./cleanup.sh ${{ secrets.S3_BUCKET }} ${{ env.STACK_NAME }} ${{ env.AWS_REGION }}
+          BUCKET_NAME="${{ secrets.S3_BUCKET }}"
+          STACK_NAME="${{ env.STACK_NAME }}"
+          REGION="${{ env.AWS_REGION }}"
+
+          echo "Cleaning up AWS resources for stack: $STACK_NAME in region: $REGION"
+
+          # 1. Empty the S3 bucket used for templates
+          echo "Emptying S3 bucket: $BUCKET_NAME..."
+          aws s3 rm "s3://$BUCKET_NAME" --recursive || echo "Bucket already empty or doesn't exist."
+
+          # 2. Delete the CloudFormation stack
+          echo "Initiating deletion of stack: $STACK_NAME..."
+          aws cloudformation delete-stack --stack-name "$STACK_NAME" --region "$REGION"
+
+          # 3. Wait for deletion to complete
+          echo "Waiting for stack deletion to finish (this may take several minutes)..."
+          aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME" --region "$REGION"
+
+          echo "Cleanup Process Finished!"
