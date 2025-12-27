@@ -35,5 +35,7 @@ jobs:
 
       - name: Post-Deployment Check
         run: |
+          echo "Listing EKS Clusters in ap-south-1:"
+          aws eks list-clusters --region ${{ env.AWS_REGION }}
           aws eks update-kubeconfig --name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }}
           kubectl get nodes -o wide
