@@ -10,6 +10,18 @@ Parameters:
     Type: String
     Default: 'eks-ha'
     Description: GitHub Repository name
+  CreateOIDCProvider:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Whether to create a new OIDC Provider (set to 'false' if you already have one).
+  ExistingOIDCProviderArn:
+    Type: String
+    Default: ''
+    Description: (Optional) The ARN of an existing GitHub OIDC Provider if CreateOIDCProvider is 'false'.
+
+Conditions:
+  CreateNewProvider: !Equals [!Ref CreateOIDCProvider, 'true']
 
 Resources:
   # EKS Cluster Role
@@ -46,6 +58,7 @@ Resources:
   # OIDC Provider for GitHub Actions
   GitHubOIDCProvider:
     Type: AWS::IAM::OIDCProvider
+    Condition: CreateNewProvider
     Properties:
       Url: https://token.actions.githubusercontent.com
       ClientIdList:
@@ -62,7 +75,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Federated: !Ref GitHubOIDCProvider
+              Federated: !If [CreateNewProvider, !Ref GitHubOIDCProvider, !Ref ExistingOIDCProviderArn]
             Action: 'sts:AssumeRoleWithWebIdentity'
             Condition:
               StringLike:
