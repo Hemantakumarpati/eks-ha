@@ -146,8 +146,8 @@ We have updated the templates to use your **existing** OIDC Provider instead of 
 
 ### 2. Verify the Identity Provider Thumbprints
 GitHub rotated their certificates. Ensure your **Identity Provider** in IAM has **both** of these thumbprints to be safe:
-1. `6938fd4d98bab03faadb97b34396831e3780aea1`
-2. `1c58a369d786a9840c4416112ed24b8df25920d3` 
+1. `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+2. `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` 
 
 ### 3. Check the "role-to-assume" Secret
 - Go to GitHub Secrets.
